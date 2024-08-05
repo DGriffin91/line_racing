@@ -1,0 +1,9 @@
+[package]
+name = "line_racing"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = "0.14.1"
+bevy_polyline = "0.10.0"
+bevy_vector_shapes = "0.8.0"
