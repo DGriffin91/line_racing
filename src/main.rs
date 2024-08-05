@@ -187,15 +187,15 @@ fn bevy_plane_3d_retained(
 fn rng_line(x: u32) -> (Vec3, Vec3) {
     (
         vec3(
-            hash_noise(x, 0, 0),
-            hash_noise(x, 0, 0 + 1024),
-            hash_noise(x, 0, 0 + 2048),
+            hash_noise(x, 1, 0),
+            hash_noise(x, 2, 0),
+            hash_noise(x, 3, 0),
         ) * 2.0
             - 1.0,
         vec3(
-            hash_noise(x, 0, 0 + 1024),
-            hash_noise(x, 0 + 2048, 0 + 1024),
-            hash_noise(x, 0 + 3072, 0 + 2048),
+            hash_noise(x, 4, 0),
+            hash_noise(x, 5, 0),
+            hash_noise(x, 6, 0),
         ) * 2.0
             - 1.0,
     )
