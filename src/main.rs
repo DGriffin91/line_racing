@@ -87,20 +87,8 @@ fn bevy_vector_shapes_retained(mut shapes: ShapeCommands) {
     shapes.disable_laa = true;
 
     for x in 0..COUNT {
-        shapes.line(
-            vec3(
-                hash_noise(x, 0, 0),
-                hash_noise(x, 0, 0 + 1024),
-                hash_noise(x, 0, 0 + 2048),
-            ) * 2.0
-                - 1.0,
-            vec3(
-                hash_noise(x, 0, 0 + 1024),
-                hash_noise(x, 0 + 2048, 0 + 1024),
-                hash_noise(x, 0 + 3072, 0 + 2048),
-            ) * 2.0
-                - 1.0,
-        );
+        let line = rng_line(x);
+        shapes.line(line.0, line.1);
     }
 }
 
@@ -110,40 +98,15 @@ fn bevy_vector_shapes_immidate(mut shapes: ShapePainter) {
     shapes.disable_laa = true;
 
     for x in 0..COUNT {
-        shapes.line(
-            vec3(
-                hash_noise(x, 0, 0),
-                hash_noise(x, 0, 0 + 1024),
-                hash_noise(x, 0, 0 + 2048),
-            ) * 2.0
-                - 1.0,
-            vec3(
-                hash_noise(x, 0, 0 + 1024),
-                hash_noise(x, 0 + 2048, 0 + 1024),
-                hash_noise(x, 0 + 3072, 0 + 2048),
-            ) * 2.0
-                - 1.0,
-        );
+        let line = rng_line(x);
+        shapes.line(line.0, line.1);
     }
 }
 
 fn gizmos_immidate(mut gizmos: Gizmos) {
     for x in 0..COUNT {
-        gizmos.line(
-            vec3(
-                hash_noise(x, 0, 0),
-                hash_noise(x, 0, 0 + 1024),
-                hash_noise(x, 0, 0 + 2048),
-            ) * 2.0
-                - 1.0,
-            vec3(
-                hash_noise(x, 0, 0 + 1024),
-                hash_noise(x, 0 + 2048, 0 + 1024),
-                hash_noise(x, 0 + 3072, 0 + 2048),
-            ) * 2.0
-                - 1.0,
-            Color::WHITE,
-        );
+        let line = rng_line(x);
+        gizmos.line(line.0, line.1, Color::WHITE);
     }
 }
 
@@ -154,22 +117,9 @@ fn bevy_polyline_retained(
 ) {
     let mut vertices = Vec::with_capacity(COUNT as usize * 2);
     for x in 0..COUNT {
-        vertices.push(
-            vec3(
-                hash_noise(x, 0, 0),
-                hash_noise(x, 0, 0 + 1024),
-                hash_noise(x, 0, 0 + 2048),
-            ) * 2.0
-                - 1.0,
-        );
-        vertices.push(
-            vec3(
-                hash_noise(x, 0, 0 + 1024),
-                hash_noise(x, 0 + 2048, 0 + 1024),
-                hash_noise(x, 0 + 3072, 0 + 2048),
-            ) * 2.0
-                - 1.0,
-        );
+        let line = rng_line(x);
+        vertices.push(line.0);
+        vertices.push(line.1);
     }
     commands.spawn(PolylineBundle {
         polyline: polylines.add(Polyline { vertices }),
@@ -190,20 +140,8 @@ fn bevy_lines_example_retained(
 ) {
     let mut lines = Vec::with_capacity(COUNT as usize * 2);
     for x in 0..COUNT {
-        lines.push((
-            vec3(
-                hash_noise(x, 0, 0),
-                hash_noise(x, 0, 0 + 1024),
-                hash_noise(x, 0, 0 + 2048),
-            ) * 2.0
-                - 1.0,
-            vec3(
-                hash_noise(x, 0, 0 + 1024),
-                hash_noise(x, 0 + 2048, 0 + 1024),
-                hash_noise(x, 0 + 3072, 0 + 2048),
-            ) * 2.0
-                - 1.0,
-        ));
+        let line = rng_line(x);
+        lines.push(line);
     }
     // Spawn a list of lines with start and end points for each lines
     commands.spawn(MaterialMeshBundle {
@@ -230,25 +168,12 @@ fn bevy_plane_3d_retained(
     });
 
     for x in 0..COUNT {
-        let a = vec3(
-            hash_noise(x, 0, 0),
-            hash_noise(x, 0, 0 + 1024),
-            hash_noise(x, 0, 0 + 2048),
-        ) * 2.0
-            - 1.0;
-
-        let b = vec3(
-            hash_noise(x, 0, 0 + 1024),
-            hash_noise(x, 0 + 2048, 0 + 1024),
-            hash_noise(x, 0 + 3072, 0 + 2048),
-        ) * 2.0
-            - 1.0;
-
-        let n = (b - a).normalize();
-        let len = (b - a).length();
+        let line = rng_line(x);
+        let n = (line.1 - line.0).normalize();
+        let len = (line.1 - line.0).length();
         let mut transform =
-            Transform::from_translation(a + n * len * 0.5).with_scale(vec3(1.0, 1.0, len));
-        transform = transform.looking_at(b, vec3(0., 0.0, 3.5));
+            Transform::from_translation(line.0 + n * len * 0.5).with_scale(vec3(1.0, 1.0, len));
+        transform = transform.looking_at(line.1, vec3(0., 0.0, 3.5));
 
         commands.spawn(PbrBundle {
             mesh: mesh.clone(),
@@ -257,6 +182,23 @@ fn bevy_plane_3d_retained(
             ..default()
         });
     }
+}
+
+fn rng_line(x: u32) -> (Vec3, Vec3) {
+    (
+        vec3(
+            hash_noise(x, 0, 0),
+            hash_noise(x, 0, 0 + 1024),
+            hash_noise(x, 0, 0 + 2048),
+        ) * 2.0
+            - 1.0,
+        vec3(
+            hash_noise(x, 0, 0 + 1024),
+            hash_noise(x, 0 + 2048, 0 + 1024),
+            hash_noise(x, 0 + 3072, 0 + 2048),
+        ) * 2.0
+            - 1.0,
+    )
 }
 
 // From https://github.com/DGriffin91/bevy_bistro_scene/blob/72c15b37199d994648a3fe43ad569d87c71504d9/src/main.rs#L402
