@@ -59,11 +59,11 @@ fn main() {
     if args.contains(&"--bevy_vector_shapes_retained".to_string()) {
         app.add_systems(Startup, bevy_vector_shapes_retained);
     }
-    if args.contains(&"--bevy_vector_shapes_immidate".to_string()) {
-        app.add_systems(Update, bevy_vector_shapes_immidate);
+    if args.contains(&"--bevy_vector_shapes_immediate".to_string()) {
+        app.add_systems(Update, bevy_vector_shapes_immediate);
     }
-    if args.contains(&"--gizmos_immidate".to_string()) {
-        app.add_systems(Update, gizmos_immidate);
+    if args.contains(&"--gizmos_immediate".to_string()) {
+        app.add_systems(Update, gizmos_immediate);
     }
     app.run();
 }
@@ -92,7 +92,7 @@ fn bevy_vector_shapes_retained(mut shapes: ShapeCommands) {
     }
 }
 
-fn bevy_vector_shapes_immidate(mut shapes: ShapePainter) {
+fn bevy_vector_shapes_immediate(mut shapes: ShapePainter) {
     shapes.thickness = 0.002;
     shapes.cap = Cap::None;
     shapes.disable_laa = true;
@@ -103,7 +103,7 @@ fn bevy_vector_shapes_immidate(mut shapes: ShapePainter) {
     }
 }
 
-fn gizmos_immidate(mut gizmos: Gizmos) {
+fn gizmos_immediate(mut gizmos: Gizmos) {
     for x in 0..COUNT {
         let line = rng_line(x);
         gizmos.line(line.0, line.1, Color::WHITE);
