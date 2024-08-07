@@ -3,6 +3,7 @@
 pub mod lines;
 pub mod sampling;
 
+use core::f32;
 use std::time::Instant;
 
 use bevy::{
@@ -56,6 +57,9 @@ fn main() {
     if args.contains(&"--bevy_polyline_retained".to_string()) {
         app.add_systems(Startup, bevy_polyline_retained);
     }
+    if args.contains(&"--bevy_polyline_retained_nan".to_string()) {
+        app.add_systems(Startup, bevy_polyline_retained_nan);
+    }
     if args.contains(&"--bevy_vector_shapes_retained".to_string()) {
         app.add_systems(Startup, bevy_vector_shapes_retained);
     }
@@ -67,6 +71,8 @@ fn main() {
     }
     app.run();
 }
+
+const TINY_LINES: bool = false;
 
 const COUNT: u32 = 100_000;
 
@@ -110,7 +116,7 @@ fn gizmos_immediate(mut gizmos: Gizmos) {
     }
 }
 
-fn bevy_polyline_retained(
+fn bevy_polyline_retained_nan(
     mut commands: Commands,
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
     mut polylines: ResMut<Assets<Polyline>>,
@@ -120,6 +126,7 @@ fn bevy_polyline_retained(
         let line = rng_line(x);
         vertices.push(line.0);
         vertices.push(line.1);
+        vertices.push(Vec3::splat(f32::NAN));
     }
     commands.spawn(PolylineBundle {
         polyline: polylines.add(Polyline { vertices }),
@@ -131,6 +138,29 @@ fn bevy_polyline_retained(
         }),
         ..default()
     });
+}
+
+fn bevy_polyline_retained(
+    mut commands: Commands,
+    mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
+    mut polylines: ResMut<Assets<Polyline>>,
+) {
+    let material = polyline_materials.add(PolylineMaterial {
+        width: 1.0,
+        color: LinearRgba::WHITE,
+        perspective: false,
+        ..default()
+    });
+    for x in 0..COUNT {
+        let line = rng_line(x);
+        commands.spawn(PolylineBundle {
+            polyline: polylines.add(Polyline {
+                vertices: vec![line.0, line.1],
+            }),
+            material: material.clone(),
+            ..default()
+        });
+    }
 }
 
 fn bevy_lines_example_retained(
@@ -185,20 +215,23 @@ fn bevy_plane_3d_retained(
 }
 
 fn rng_line(x: u32) -> (Vec3, Vec3) {
-    (
-        vec3(
-            hash_noise(x, 1, 0),
-            hash_noise(x, 2, 0),
-            hash_noise(x, 3, 0),
-        ) * 2.0
-            - 1.0,
-        vec3(
-            hash_noise(x, 4, 0),
-            hash_noise(x, 5, 0),
-            hash_noise(x, 6, 0),
-        ) * 2.0
-            - 1.0,
-    )
+    let a = vec3(
+        hash_noise(x, 1, 0),
+        hash_noise(x, 2, 0),
+        hash_noise(x, 3, 0),
+    ) * 2.0
+        - 1.0;
+    let b = vec3(
+        hash_noise(x, 4, 0),
+        hash_noise(x, 5, 0),
+        hash_noise(x, 6, 0),
+    ) * 2.0
+        - 1.0;
+    if TINY_LINES {
+        (a, a + b * 0.005)
+    } else {
+        (a, b)
+    }
 }
 
 // From https://github.com/DGriffin91/bevy_bistro_scene/blob/72c15b37199d994648a3fe43ad569d87c71504d9/src/main.rs#L402
