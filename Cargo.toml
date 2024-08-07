@@ -7,3 +7,4 @@ edition = "2021"
 bevy = "0.14.1"
 bevy_polyline = "0.10.0"
 bevy_vector_shapes = "0.8.0"
+bevy_mod_mesh_tools = { git = "https://github.com/DGriffin91/bevy_mod_mesh_tools", rev = "37afec1cc25b9f4ea7e6a3514f5af4d0df872e9a" }

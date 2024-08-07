@@ -14,6 +14,7 @@ use bevy::{
     window::{PresentMode, WindowResolution},
     winit::{UpdateMode, WinitSettings},
 };
+use bevy_mod_mesh_tools::{mesh_append, mesh_empty_default, mesh_with_transform};
 use bevy_polyline::{
     prelude::{Polyline, PolylineBundle, PolylineMaterial},
     PolylinePlugin,
@@ -54,6 +55,9 @@ fn main() {
     if args.contains(&"--bevy_plane_3d_retained".to_string()) {
         app.add_systems(Startup, bevy_plane_3d_retained);
     }
+    if args.contains(&"--bevy_plane_3d_retained_combined".to_string()) {
+        app.add_systems(Startup, bevy_plane_3d_retained_combined);
+    }
     if args.contains(&"--bevy_polyline_retained".to_string()) {
         app.add_systems(Startup, bevy_polyline_retained);
     }
@@ -68,6 +72,9 @@ fn main() {
     }
     if args.contains(&"--gizmos_immediate".to_string()) {
         app.add_systems(Update, gizmos_immediate);
+    }
+    if args.contains(&"--gizmos_immediate_nan".to_string()) {
+        app.add_systems(Update, gizmos_immediate_nan);
     }
     app.run();
 }
@@ -116,12 +123,25 @@ fn gizmos_immediate(mut gizmos: Gizmos) {
     }
 }
 
+fn gizmos_immediate_nan(mut gizmos: Gizmos) {
+    // Draws a single polyline (instead of individual lines) and inserts a NaN in between lines to separate them.
+    let mut vertices = Vec::with_capacity(COUNT as usize * 3);
+    for x in 0..COUNT {
+        let line = rng_line(x);
+        vertices.push(line.0);
+        vertices.push(line.1);
+        vertices.push(Vec3::splat(f32::NAN));
+    }
+    gizmos.linestrip(vertices.clone(), Color::WHITE)
+}
+
 fn bevy_polyline_retained_nan(
     mut commands: Commands,
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
     mut polylines: ResMut<Assets<Polyline>>,
 ) {
-    let mut vertices = Vec::with_capacity(COUNT as usize * 2);
+    // Draws a single polyline (instead of individual lines) and inserts a NaN in between lines to separate them.
+    let mut vertices = Vec::with_capacity(COUNT as usize * 3);
     for x in 0..COUNT {
         let line = rng_line(x);
         vertices.push(line.0);
@@ -212,6 +232,40 @@ fn bevy_plane_3d_retained(
             ..default()
         });
     }
+}
+
+fn bevy_plane_3d_retained_combined(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    // Combines all the individual line meshes into one single mesh.
+    let mesh = Plane3d::default().mesh().size(0.002, 1.0).build();
+    let mut combined_mesh = mesh_empty_default();
+
+    for x in 0..COUNT {
+        let line = rng_line(x);
+        let n = (line.1 - line.0).normalize();
+        let len = (line.1 - line.0).length();
+        let mut transform =
+            Transform::from_translation(line.0 + n * len * 0.5).with_scale(vec3(1.0, 1.0, len));
+        transform = transform.looking_at(line.1, vec3(0., 0.0, 3.5));
+
+        let mesh = mesh_with_transform(&mesh, &transform).unwrap();
+        mesh_append(&mut combined_mesh, &mesh).unwrap();
+    }
+
+    let material = materials.add(StandardMaterial {
+        base_color: Color::WHITE,
+        unlit: true,
+        cull_mode: None,
+        ..default()
+    });
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(combined_mesh),
+        material: material.clone(),
+        ..default()
+    });
 }
 
 fn rng_line(x: u32) -> (Vec3, Vec3) {
