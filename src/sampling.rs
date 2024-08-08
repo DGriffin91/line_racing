@@ -1,7 +1,5 @@
 use bevy::math::{vec3, Vec3};
 
-use crate::TINY_LINES;
-
 #[inline(always)]
 pub fn uhash(a: u32, b: u32) -> u32 {
     let mut x = (a.overflowing_mul(1597334673).0) ^ (b.overflowing_mul(3812015801).0);
@@ -24,23 +22,51 @@ pub fn hash_noise(x: u32, y: u32, z: u32) -> f32 {
     unormf(uhash(x, (y << 11) + z))
 }
 
-#[inline(always)]
-pub fn rng_line(x: u32) -> (Vec3, Vec3) {
-    let a = vec3(
-        hash_noise(x, 1, 0),
-        hash_noise(x, 2, 0),
-        hash_noise(x, 3, 0),
-    ) * 2.0
-        - 1.0;
-    let b = vec3(
-        hash_noise(x, 4, 0),
-        hash_noise(x, 5, 0),
-        hash_noise(x, 6, 0),
-    ) * 2.0
-        - 1.0;
-    if TINY_LINES {
-        (a, a + b * 0.005)
-    } else {
-        (a, b)
+pub struct ContinuousRandomLineGenerator {
+    last_vert: Vec3,
+    radius: f32,
+    n: u32,
+    length: f32,
+}
+
+impl Default for ContinuousRandomLineGenerator {
+    fn default() -> Self {
+        Self {
+            last_vert: Vec3::ZERO,
+            radius: 1.0,
+            n: 0,
+            length: 0.03,
+        }
+    }
+}
+
+impl ContinuousRandomLineGenerator {
+    pub fn next(&mut self) -> Vec3 {
+        let mut noise = vec3(
+            hash_noise(self.n, 1, 0),
+            hash_noise(self.n, 2, 0),
+            hash_noise(self.n, 3, 0),
+        ) * 2.0
+            - 1.0;
+
+        if self.last_vert.x.abs() > self.radius {
+            noise.x = noise.x.copysign(-self.last_vert.x.signum());
+        }
+        if self.last_vert.y.abs() > self.radius {
+            noise.y = noise.y.copysign(-self.last_vert.y.signum());
+        }
+        if self.last_vert.z.abs() > self.radius {
+            noise.z = noise.z.copysign(-self.last_vert.z.signum());
+        }
+
+        let next_offset = noise * self.length;
+        let next_vert = self.last_vert + next_offset;
+        self.last_vert = next_vert;
+        self.n += 1;
+        next_vert
+    }
+
+    pub fn next_line(&mut self) -> (Vec3, Vec3) {
+        (self.last_vert, self.next())
     }
 }

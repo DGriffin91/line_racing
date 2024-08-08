@@ -5,7 +5,7 @@ pub mod bevy_lines_example;
 pub mod sampling;
 
 use core::f32;
-use std::{process::Command, time::Instant};
+use std::{f32::consts::TAU, process::Command, time::Instant};
 
 use basic_line_scenes::{
     bevy_lines_example_retained, bevy_plane_3d_retained, bevy_plane_3d_retained_combined,
@@ -139,14 +139,11 @@ fn base_app(title: &str, disable_log: bool) -> App {
             MaterialPlugin::<LineMaterial>::default(),
         ))
         .add_systems(Startup, camera)
-        .add_systems(Update, benchmark)
-        .add_systems(Update, all_benchmark);
+        .add_systems(Update, benchmark);
     app
 }
 
-const TINY_LINES: bool = false;
-
-const COUNT: u32 = 100_000;
+const COUNT: u32 = 150_000;
 
 fn camera(mut commands: Commands, mut config_store: ResMut<GizmoConfigStore>) {
     for (_, config, _) in config_store.iter_mut() {
@@ -164,70 +161,53 @@ fn benchmark(
     input: Res<ButtonInput<KeyCode>>,
     mut bench_started: Local<Option<Instant>>,
     mut bench_frame: Local<u32>,
-    mut count_per_step: Local<u32>,
+    mut count: Local<u32>,
     benchmark_name: Res<BenchmarkName>,
     time: Res<Time>,
-) {
-    if input.just_pressed(KeyCode::KeyB) && bench_started.is_none() {
-        *bench_started = Some(Instant::now());
-        *bench_frame = 0;
-        // Try to render for around 4s or at least 30 frames per step
-        *count_per_step = ((4.0 / time.delta_seconds()) as u32).max(30);
-        println!(
-            "Starting Benchmark with {} frames per step",
-            *count_per_step
-        );
-    }
-    if bench_started.is_none() {
-        return;
-    }
-    if *bench_frame == *count_per_step {
-        let elapsed = bench_started.unwrap().elapsed().as_secs_f32();
-        let time_ms = (elapsed / *bench_frame as f32) * 1000.0;
-        println!("{:>6.2}ms: {}", time_ms, benchmark_name.0);
-        *bench_started = None;
-        *bench_frame = 0;
-    }
-    *bench_frame += 1;
-}
-
-fn all_benchmark(
-    mut bench_started: Local<Option<Instant>>,
-    mut bench_frame: Local<u32>,
-    mut count_per_step: Local<u32>,
-    time: Res<Time>,
+    mut camera: Query<&mut Transform, With<Camera>>,
     all_benchmark_mode: Option<Res<BenchmarkAllMode>>,
-    benchmark_name: Res<BenchmarkName>,
-    mut warm_up_frames: Local<u32>,
     mut app_exit: EventWriter<bevy::app::AppExit>,
     mut start_time: Local<f32>,
+    mut warm_up_frames: Local<u32>,
 ) {
-    let Some(_) = all_benchmark_mode else {
-        return;
-    };
-    if *start_time == 0.0 {
-        *start_time = time.elapsed_seconds();
+    if all_benchmark_mode.is_some() {
+        if *start_time == 0.0 {
+            *start_time = time.elapsed_seconds();
+        }
+        // Warm up for 2 seconds from the time this function in the Update schedule was first able to run, and then for an additional 20 frames
+        if time.elapsed_seconds() - *start_time > 2.0 {
+            *warm_up_frames += 1;
+        }
     }
-    // Warm up for 2 seconds from the time this function in the Update schedule was first able to run, and then for an additional 20 frames
-    if time.elapsed_seconds() - *start_time > 2.0 {
-        *warm_up_frames += 1;
-    }
-    if *warm_up_frames > 20 && bench_started.is_none() {
+
+    if (*warm_up_frames > 20 || input.just_pressed(KeyCode::KeyB)) && bench_started.is_none() {
         *bench_started = Some(Instant::now());
         *bench_frame = 0;
         // Try to render for around 4s or at least 30 frames
-        *count_per_step = ((4.0 / time.delta_seconds()) as u32).max(30);
+        *count = ((4.0 / time.delta_seconds()) as u32).max(30);
+        if all_benchmark_mode.is_none() {
+            println!("Starting Benchmark with {} frames", *count);
+        }
     }
     if bench_started.is_none() {
         return;
     }
-    if *bench_frame == *count_per_step {
+
+    let mut camera = camera.single_mut();
+    let t = (*bench_frame as f32 / *count as f32) * TAU;
+    camera.translation.x = t.sin() * 3.5;
+    camera.translation.z = t.cos() * 3.5;
+    *camera = camera.looking_at(Vec3::ZERO, Vec3::Y);
+
+    if *bench_frame == *count {
         let elapsed = bench_started.unwrap().elapsed().as_secs_f32();
         let time_ms = (elapsed / *bench_frame as f32) * 1000.0;
         println!("{:>6.2}ms: {}", time_ms, benchmark_name.0);
         *bench_started = None;
         *bench_frame = 0;
-        app_exit.send(bevy::app::AppExit::Success);
+        if all_benchmark_mode.is_some() {
+            app_exit.send(bevy::app::AppExit::Success);
+        }
     }
     *bench_frame += 1;
 }
