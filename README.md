@@ -1,7 +1,11 @@
 
 Use `cargo run --release -- --gizmos_immediate`, etc... to select specific rendering method. Press B to benchmark. 
 
-Use `cargo run --release -- --benchmark` to automatically run all of the benchmarks.
+Use `cargo run --release -- --benchmark --auto_count` to automatically run all of the benchmarks with automatic line counts (more accurate).
+Auto line counts starts at 50k and doubles the line count until the frame times is above 8ms. **Note: Using auto lines counts can result in flashing colors as meshes spawn/despawn.**
+
+Use `cargo run --release -- --benchmark` to automatically run all of the benchmarks with fixed line counts.
+
 
 For benchmarking, please lock GPU/VRAM clocks: [NVIDIA Instructions](https://developer.nvidia.com/blog/advanced-api-performance-setstablepowerstate/). And wait for rust-analyser, etc.. to cool down.
 
