@@ -19,14 +19,3 @@ pub fn unormf(n: u32) -> f32 {
 pub fn hash_noise(x: u32, y: u32, z: u32) -> f32 {
     unormf(uhash(x, (y << 11) + z))
 }
-
-// like .rem_euclid(1.0)
-#[inline(always)]
-pub fn pfract(x: f32) -> f32 {
-    let y = x.fract();
-    if y < 0.0 {
-        y + 1.0
-    } else {
-        y
-    }
-}
