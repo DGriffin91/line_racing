@@ -8,46 +8,46 @@ use bevy_vector_shapes::prelude::*;
 use crate::{
     bevy_lines_example::{LineList, LineMaterial},
     sampling::ContinuousRandomLineGenerator,
-    COUNT,
+    LineCount,
 };
 
-pub fn bevy_vector_shapes_retained(mut shapes: ShapeCommands) {
+pub fn bevy_vector_shapes_retained(mut shapes: ShapeCommands, count: Res<LineCount>) {
     shapes.thickness = 0.002;
     shapes.cap = Cap::None;
     shapes.disable_laa = true;
 
     let mut line_gen = ContinuousRandomLineGenerator::default();
-    for _ in 0..COUNT {
+    for _ in 0..count.0 {
         let line = line_gen.next_line();
         shapes.line(line.0, line.1);
     }
 }
 
-pub fn bevy_vector_shapes_immediate(mut shapes: ShapePainter) {
+pub fn bevy_vector_shapes_immediate(mut shapes: ShapePainter, count: Res<LineCount>) {
     shapes.thickness = 0.002;
     shapes.cap = Cap::None;
     shapes.disable_laa = true;
 
     let mut line_gen = ContinuousRandomLineGenerator::default();
-    for _ in 0..COUNT {
+    for _ in 0..count.0 {
         let line = line_gen.next_line();
         shapes.line(line.0, line.1);
     }
 }
 
-pub fn gizmos_immediate(mut gizmos: Gizmos) {
+pub fn gizmos_immediate(mut gizmos: Gizmos, count: Res<LineCount>) {
     let mut line_gen = ContinuousRandomLineGenerator::default();
-    for _ in 0..COUNT {
+    for _ in 0..count.0 {
         let line = line_gen.next_line();
         gizmos.line(line.0, line.1, Color::WHITE);
     }
 }
 
-pub fn gizmos_immediate_nan(mut gizmos: Gizmos) {
+pub fn gizmos_immediate_nan(mut gizmos: Gizmos, count: Res<LineCount>) {
     // Draws a single polyline (instead of individual lines) and inserts a NaN in between lines to separate them.
-    let mut vertices = Vec::with_capacity(COUNT as usize * 3);
+    let mut vertices = Vec::with_capacity(count.0 as usize * 3);
     let mut line_gen = ContinuousRandomLineGenerator::default();
-    for _ in 0..COUNT {
+    for _ in 0..count.0 {
         let line = line_gen.next_line();
         vertices.push(line.0);
         vertices.push(line.1);
@@ -56,11 +56,11 @@ pub fn gizmos_immediate_nan(mut gizmos: Gizmos) {
     gizmos.linestrip(vertices.clone(), Color::WHITE)
 }
 
-pub fn gizmos_immediate_continuous_polyline(mut gizmos: Gizmos) {
+pub fn gizmos_immediate_continuous_polyline(mut gizmos: Gizmos, count: Res<LineCount>) {
     // Draws a single polyline (instead of individual lines).
-    let mut vertices = Vec::with_capacity(COUNT as usize);
+    let mut vertices = Vec::with_capacity(count.0 as usize);
     let mut line_gen = ContinuousRandomLineGenerator::default();
-    for _ in 0..COUNT {
+    for _ in 0..count.0 {
         let line = line_gen.next();
         vertices.push(line);
     }
@@ -71,11 +71,12 @@ pub fn bevy_polyline_retained_continuous_polyline(
     mut commands: Commands,
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
     mut polylines: ResMut<Assets<Polyline>>,
+    count: Res<LineCount>,
 ) {
     // Draws a single polyline (instead of individual lines).
-    let mut vertices = Vec::with_capacity(COUNT as usize);
+    let mut vertices = Vec::with_capacity(count.0 as usize);
     let mut line_gen = ContinuousRandomLineGenerator::default();
-    for _ in 0..COUNT {
+    for _ in 0..count.0 {
         let line = line_gen.next_line();
         vertices.push(line.0);
     }
@@ -95,11 +96,12 @@ pub fn bevy_polyline_retained_nan(
     mut commands: Commands,
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
     mut polylines: ResMut<Assets<Polyline>>,
+    count: Res<LineCount>,
 ) {
     // Draws a single polyline (instead of individual lines) and inserts a NaN in between lines to separate them.
-    let mut vertices = Vec::with_capacity(COUNT as usize * 3);
+    let mut vertices = Vec::with_capacity(count.0 as usize * 3);
     let mut line_gen = ContinuousRandomLineGenerator::default();
-    for _ in 0..COUNT {
+    for _ in 0..count.0 {
         let line = line_gen.next_line();
         vertices.push(line.0);
         vertices.push(line.1);
@@ -121,6 +123,7 @@ pub fn bevy_polyline_retained(
     mut commands: Commands,
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
     mut polylines: ResMut<Assets<Polyline>>,
+    count: Res<LineCount>,
 ) {
     let material = polyline_materials.add(PolylineMaterial {
         width: 1.0,
@@ -129,7 +132,7 @@ pub fn bevy_polyline_retained(
         ..default()
     });
     let mut line_gen = ContinuousRandomLineGenerator::default();
-    for _ in 0..COUNT {
+    for _ in 0..count.0 {
         let line = line_gen.next_line();
         commands.spawn(PolylineBundle {
             polyline: polylines.add(Polyline {
@@ -145,10 +148,11 @@ pub fn bevy_lines_example_retained(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<LineMaterial>>,
+    count: Res<LineCount>,
 ) {
-    let mut lines = Vec::with_capacity(COUNT as usize * 2);
+    let mut lines = Vec::with_capacity(count.0 as usize * 2);
     let mut line_gen = ContinuousRandomLineGenerator::default();
-    for _ in 0..COUNT {
+    for _ in 0..count.0 {
         let line = line_gen.next_line();
         lines.push(line);
     }
@@ -167,6 +171,7 @@ pub fn bevy_plane_3d_retained(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    count: Res<LineCount>,
 ) {
     // Need to oversize just a tad so the planes can rasterize a bit more greedily like the actual line primitives
     let mesh = meshes.add(Plane3d::default().mesh().size(0.0022, 1.01));
@@ -178,7 +183,7 @@ pub fn bevy_plane_3d_retained(
     });
 
     let mut line_gen = ContinuousRandomLineGenerator::default();
-    for _ in 0..COUNT {
+    for _ in 0..count.0 {
         let line = line_gen.next_line();
         let n = (line.1 - line.0).normalize();
         let len = (line.1 - line.0).length();
@@ -199,6 +204,7 @@ pub fn bevy_plane_3d_retained_combined(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    count: Res<LineCount>,
 ) {
     // Combines all the individual line meshes into one single mesh.
 
@@ -207,7 +213,7 @@ pub fn bevy_plane_3d_retained_combined(
     let mut combined_mesh = mesh_empty_default();
 
     let mut line_gen = ContinuousRandomLineGenerator::default();
-    for _ in 0..COUNT {
+    for _ in 0..count.0 {
         let line = line_gen.next_line();
         let n = (line.1 - line.0).normalize();
         let len = (line.1 - line.0).length();

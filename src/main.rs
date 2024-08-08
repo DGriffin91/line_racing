@@ -31,6 +31,9 @@ struct BenchmarkAllMode;
 #[derive(Resource)]
 struct BenchmarkName(String);
 
+#[derive(Resource)]
+pub struct LineCount(u32);
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let auto_bench_child_process = args.contains(&"--auto_bench_child_process".to_string());
@@ -139,7 +142,8 @@ fn base_app(title: &str, disable_log: bool) -> App {
             MaterialPlugin::<LineMaterial>::default(),
         ))
         .add_systems(Startup, camera)
-        .add_systems(Update, benchmark);
+        .add_systems(Update, benchmark)
+        .insert_resource(LineCount(COUNT));
     app
 }
 
