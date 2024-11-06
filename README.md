@@ -11,15 +11,15 @@ For benchmarking, please lock GPU/VRAM clocks: [NVIDIA Instructions](https://dev
 
 150k lines, 7950x, RTX3060, locked GPU clocks:
 ```
-  0.55ms: bevy_lines_example_retained
- 13.44ms: bevy_plane_3d_retained
-  0.59ms: bevy_plane_3d_retained_combined
-  3.70ms: gizmos_immediate
-  5.28ms: gizmos_immediate_nan
-  2.71ms: gizmos_immediate_continuous_polyline
- 25.75ms: bevy_vector_shapes_retained
- 26.86ms: bevy_vector_shapes_immediate
-140.38ms: bevy_polyline_retained
-  0.55ms: bevy_polyline_retained_nan
-  0.54ms: bevy_polyline_retained_continuous_polyline
+2056.8k lines/ms: bevy_lines_example_retained (12.4ms)
+  11.2k lines/ms: bevy_plane_3d_retained (17.9ms)
+ 820.6k lines/ms: bevy_plane_3d_retained_combined (15.6ms)
+  41.9k lines/ms: gizmos_immediate (19.1ms)
+  26.2k lines/ms: gizmos_immediate_nan (15.3ms)
+  59.7k lines/ms: gizmos_immediate_continuous_polyline (13.4ms)
+   5.9k lines/ms: bevy_vector_shapes_retained (16.9ms)
+   5.7k lines/ms: bevy_vector_shapes_immediate (17.4ms)
+   1.2k lines/ms: bevy_polyline_retained (43.2ms)
+ 403.9k lines/ms: bevy_polyline_retained_nan (15.8ms)
+ 590.4k lines/ms: bevy_polyline_retained_continuous_polyline (10.8ms)
 ```
