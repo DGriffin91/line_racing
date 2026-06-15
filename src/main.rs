@@ -26,7 +26,7 @@ use bevy_polyline::PolylinePlugin;
 use bevy_vector_shapes::prelude::*;
 
 use crate::basic_line_scenes::{
-    gizmos_retained, gizmos_retained_continuous_polyline, gizmos_retained_separate,
+    gizmos_retained, gizmos_retained_combined, gizmos_retained_continuous_polyline,
 };
 
 #[derive(Resource)]
@@ -63,7 +63,7 @@ fn main() {
             "--gizmos_immediate_nan",
             "--gizmos_immediate_continuous_polyline",
             "--gizmos_retained",
-            "--gizmos_retained_separate",
+            "--gizmos_retained_combined",
             "--gizmos_retained_continuous_polyline",
             "--bevy_vector_shapes_retained",
             "--bevy_vector_shapes_immediate",
@@ -153,8 +153,8 @@ fn main() {
     if args.contains(&"--gizmos_retained".to_string()) {
         app.add_systems(Update, gizmos_retained);
     }
-    if args.contains(&"--gizmos_retained_separate".to_string()) {
-        app.add_systems(Update, gizmos_retained_separate);
+    if args.contains(&"--gizmos_retained_combined".to_string()) {
+        app.add_systems(Update, gizmos_retained_combined);
     }
     if args.contains(&"--gizmos_retained_continuous_polyline".to_string()) {
         app.add_systems(Update, gizmos_retained_continuous_polyline);
@@ -318,7 +318,11 @@ fn line_count_tuner(
     let this_time_ms = avg_time * 1000.0;
     let mut updated = false;
 
-    if this_time_ms < 8.0 {
+    // TODO don't be silly. Can we query memory usage?
+    let avoid_oom =
+        benchmark_name.0 == "bevy_plane_3d_retained_combined" && line_count.0 >= 25_600_000;
+
+    if this_time_ms < 8.0 && !avoid_oom {
         line_count.0 *= 2;
         update_count_event.write(UpdateCountEvent(line_count.0));
         updated = true;

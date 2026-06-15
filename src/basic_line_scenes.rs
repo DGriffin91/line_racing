@@ -288,36 +288,6 @@ pub fn gizmos_retained(
 
     let mut line_gen = ContinuousRandomLineGenerator::default();
 
-    let mut linegizmo = GizmoAsset::default();
-
-    for _ in 0..count.0 {
-        let line = line_gen.next_line();
-        linegizmo.line(line.0, line.1, Color::WHITE);
-    }
-
-    commands
-        .spawn(Gizmo {
-            handle: gizmos.add(linegizmo),
-            line_config: GizmoLineConfig {
-                width: 1.0,
-                ..default()
-            },
-            ..default()
-        })
-        .insert(RetainedLines);
-}
-
-pub fn gizmos_retained_separate(
-    mut commands: Commands,
-    mut gizmos: ResMut<Assets<GizmoAsset>>,
-    mut update_count_event: MessageReader<UpdateCountEvent>,
-) {
-    let Some(count) = update_count_event.read().last() else {
-        return;
-    };
-
-    let mut line_gen = ContinuousRandomLineGenerator::default();
-
     for _ in 0..count.0 {
         let line = line_gen.next_line();
 
@@ -336,6 +306,36 @@ pub fn gizmos_retained_separate(
             })
             .insert(RetainedLines);
     }
+}
+
+pub fn gizmos_retained_combined(
+    mut commands: Commands,
+    mut gizmos: ResMut<Assets<GizmoAsset>>,
+    mut update_count_event: MessageReader<UpdateCountEvent>,
+) {
+    let Some(count) = update_count_event.read().last() else {
+        return;
+    };
+
+    let mut line_gen = ContinuousRandomLineGenerator::default();
+
+    let mut linegizmo = GizmoAsset::default();
+
+    for _ in 0..count.0 {
+        let line = line_gen.next_line();
+        linegizmo.line(line.0, line.1, Color::WHITE);
+    }
+
+    commands
+        .spawn(Gizmo {
+            handle: gizmos.add(linegizmo),
+            line_config: GizmoLineConfig {
+                width: 1.0,
+                ..default()
+            },
+            ..default()
+        })
+        .insert(RetainedLines);
 }
 
 pub fn gizmos_retained_continuous_polyline(
