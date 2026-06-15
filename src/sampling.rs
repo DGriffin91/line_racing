@@ -41,7 +41,7 @@ impl Default for ContinuousRandomLineGenerator {
 }
 
 impl ContinuousRandomLineGenerator {
-    pub fn next(&mut self) -> Vec3 {
+    pub fn next_vert(&mut self) -> Vec3 {
         let mut noise = vec3(
             hash_noise(self.n, 1, 0),
             hash_noise(self.n, 2, 0),
@@ -67,6 +67,6 @@ impl ContinuousRandomLineGenerator {
     }
 
     pub fn next_line(&mut self) -> (Vec3, Vec3) {
-        (self.last_vert, self.next())
+        (self.last_vert, self.next_vert())
     }
 }

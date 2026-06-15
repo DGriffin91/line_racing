@@ -71,7 +71,7 @@ pub fn gizmos_immediate_continuous_polyline(mut gizmos: Gizmos, count: Res<LineC
     let mut vertices = Vec::with_capacity(count.0 as usize);
     let mut line_gen = ContinuousRandomLineGenerator::default();
     for _ in 0..count.0 {
-        let line = line_gen.next();
+        let line = line_gen.next_vert();
         vertices.push(line);
     }
     gizmos.linestrip(vertices.clone(), Color::WHITE)
@@ -191,7 +191,6 @@ pub fn bevy_lines_example_retained(
             Transform::from_xyz(0.0, 0.0, 0.0),
             MeshMaterial3d(materials.add(LineMaterial {
                 color: LinearRgba::WHITE,
-                ..default()
             })),
         ))
         .insert(RetainedLines);

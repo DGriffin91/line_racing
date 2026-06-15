@@ -198,6 +198,7 @@ fn camera(
 }
 
 // From https://github.com/DGriffin91/bevy_bistro_scene/blob/72c15b37199d994648a3fe43ad569d87c71504d9/src/main.rs#L402
+#[allow(clippy::too_many_arguments)]
 fn benchmark(
     input: Res<ButtonInput<KeyCode>>,
     mut bench_started: Local<Option<Instant>>,
@@ -268,6 +269,7 @@ fn benchmark(
 #[derive(Resource)]
 pub struct CountStable(pub bool);
 
+#[allow(clippy::too_many_arguments)]
 fn line_count_tuner(
     mut commands: Commands,
     mut update_count_event: MessageWriter<UpdateCountEvent>,
@@ -285,7 +287,7 @@ fn line_count_tuner(
     mut last_time: Local<f32>,
     auto_count: Option<Res<AutoCount>>,
 ) {
-    if count_stable.0 == true || auto_count.is_none() {
+    if count_stable.0 || auto_count.is_none() {
         return;
     }
     if *sit_time == 0 {
