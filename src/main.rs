@@ -14,9 +14,8 @@ use basic_line_scenes::{
     gizmos_immediate_continuous_polyline, gizmos_immediate_nan,
 };
 use bevy::{
-    core::FrameCount,
     core_pipeline::tonemapping::Tonemapping,
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    diagnostic::{FrameCount, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     log::LogPlugin,
     prelude::*,
     window::{PresentMode, WindowResolution},
@@ -32,7 +31,7 @@ pub struct BenchmarkAllMode;
 #[derive(Resource)]
 pub struct BenchmarkName(String);
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct UpdateCountEvent(pub u32);
 
 #[derive(Resource)]
@@ -98,7 +97,10 @@ fn main() {
     if auto_bench {
         app.insert_resource(BenchmarkAllMode);
     } else {
-        app.add_plugins((LogDiagnosticsPlugin::default(), FrameTimeDiagnosticsPlugin));
+        app.add_plugins((
+            LogDiagnosticsPlugin::default(),
+            FrameTimeDiagnosticsPlugin::default(),
+        ));
     }
 
     if args.contains(&"--bevy_lines_example_retained".to_string()) {
@@ -149,7 +151,7 @@ fn base_app(title: &str, disable_log: bool) -> App {
         primary_window: Some(Window {
             title: title.to_string(),
             present_mode: PresentMode::Immediate,
-            resolution: WindowResolution::new(1024.0, 1024.0).with_scale_factor_override(1.0),
+            resolution: WindowResolution::new(1024, 1024).with_scale_factor_override(1.0),
             ..default()
         }),
         ..default()
@@ -158,38 +160,41 @@ fn base_app(title: &str, disable_log: bool) -> App {
         default_plugins = default_plugins.disable::<LogPlugin>();
     }
     let mut app = App::new();
-    app.insert_resource(Msaa::Off)
-        .insert_resource(WinitSettings {
-            focused_mode: UpdateMode::Continuous,
-            unfocused_mode: UpdateMode::Continuous,
-        })
-        .add_plugins(default_plugins)
-        .add_plugins((
-            ShapePlugin::default(),
-            PolylinePlugin,
-            MaterialPlugin::<LineMaterial>::default(),
-        ))
-        .add_systems(Startup, camera)
-        .add_systems(Update, (benchmark, line_count_tuner))
-        .add_event::<UpdateCountEvent>();
+    app.insert_resource(WinitSettings {
+        focused_mode: UpdateMode::Continuous,
+        unfocused_mode: UpdateMode::Continuous,
+    })
+    .add_plugins(default_plugins)
+    .add_plugins((
+        ShapePlugin::default(),
+        PolylinePlugin,
+        MaterialPlugin::<LineMaterial>::default(),
+    ))
+    .add_systems(Startup, camera)
+    .add_systems(Update, (benchmark, line_count_tuner))
+    .add_message::<UpdateCountEvent>();
     app
 }
 
 fn camera(
     mut commands: Commands,
     mut config_store: ResMut<GizmoConfigStore>,
-    mut update_count_event: EventWriter<UpdateCountEvent>,
+    mut update_count_event: MessageWriter<UpdateCountEvent>,
     line_count: Res<LineCount>,
 ) {
     for (_, config, _) in config_store.iter_mut() {
-        config.line_width = 1.0;
+        config.line = GizmoLineConfig {
+            width: 1.0,
+            ..default()
+        };
     }
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(0., 0.0, 3.5).looking_at(Vec3::ZERO, Vec3::Y),
-        tonemapping: Tonemapping::None,
-        ..default()
-    });
-    update_count_event.send(UpdateCountEvent(line_count.0));
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(0., 0.0, 3.5).looking_at(Vec3::ZERO, Vec3::Y),
+        Tonemapping::None,
+        Msaa::Off,
+    ));
+    update_count_event.write(UpdateCountEvent(line_count.0));
 }
 
 // From https://github.com/DGriffin91/bevy_bistro_scene/blob/72c15b37199d994648a3fe43ad569d87c71504d9/src/main.rs#L402
@@ -200,9 +205,9 @@ fn benchmark(
     mut count: Local<u32>,
     benchmark_name: Res<BenchmarkName>,
     time: Res<Time>,
-    mut camera: Query<&mut Transform, With<Camera>>,
+    mut camera_trans: Single<&mut Transform, With<Camera>>,
     all_benchmark_mode: Option<Res<BenchmarkAllMode>>,
-    mut app_exit: EventWriter<bevy::app::AppExit>,
+    mut app_exit: MessageWriter<bevy::app::AppExit>,
     mut start_time: Local<f32>,
     mut warm_up_frames: Local<u32>,
     line_count: Res<LineCount>,
@@ -211,10 +216,10 @@ fn benchmark(
 ) {
     if all_benchmark_mode.is_some() {
         if *start_time == 0.0 {
-            *start_time = time.elapsed_seconds();
+            *start_time = time.elapsed_secs();
         }
         // Warm up for 2 seconds from the time this function in the Update schedule was first able to run, and then for an additional 20 frames
-        if time.elapsed_seconds() - *start_time > 2.0 {
+        if time.elapsed_secs() - *start_time > 2.0 {
             *warm_up_frames += 1;
         }
     }
@@ -226,7 +231,7 @@ fn benchmark(
         *bench_started = Some(Instant::now());
         *bench_frame = 0;
         // Try to render for around 4s or at least 30 frames
-        *count = ((4.0 / time.delta_seconds()) as u32).max(30);
+        *count = ((4.0 / time.delta_secs()) as u32).max(30);
         if all_benchmark_mode.is_none() {
             println!("Starting Benchmark with {} frames", *count);
         }
@@ -235,11 +240,10 @@ fn benchmark(
         return;
     }
 
-    let mut camera = camera.single_mut();
     let t = (*bench_frame as f32 / *count as f32) * TAU;
-    camera.translation.x = t.sin() * 3.5;
-    camera.translation.z = t.cos() * 3.5;
-    *camera = camera.looking_at(Vec3::ZERO, Vec3::Y);
+    camera_trans.translation.x = t.sin() * 3.5;
+    camera_trans.translation.z = t.cos() * 3.5;
+    **camera_trans = camera_trans.looking_at(Vec3::ZERO, Vec3::Y);
 
     if *bench_frame == *count {
         let elapsed = bench_started.unwrap().elapsed().as_secs_f32();
@@ -255,7 +259,7 @@ fn benchmark(
         *bench_started = None;
         *bench_frame = 0;
         if all_benchmark_mode.is_some() {
-            app_exit.send(bevy::app::AppExit::Success);
+            app_exit.write(bevy::app::AppExit::Success);
         }
     }
     *bench_frame += 1;
@@ -266,11 +270,11 @@ pub struct CountStable(pub bool);
 
 fn line_count_tuner(
     mut commands: Commands,
-    mut update_count_event: EventWriter<UpdateCountEvent>,
+    mut update_count_event: MessageWriter<UpdateCountEvent>,
     benchmark_name: Res<BenchmarkName>,
     mut line_count: ResMut<LineCount>,
     time: Res<Time>,
-    mut windows: Query<&mut Window>,
+    mut window: Single<&mut Window>,
     retained_lines: Query<Entity, With<RetainedLines>>,
     mut count_stable: ResMut<CountStable>,
     frame_count: Res<FrameCount>,
@@ -290,14 +294,14 @@ fn line_count_tuner(
     if *updated_last_frame + *sit_time > frame_count.0 {
         return;
     }
-    let avg_time = (*last_time + time.delta_seconds()) * 0.5;
-    *last_time = time.delta_seconds();
+    let avg_time = (*last_time + time.delta_secs()) * 0.5;
+    *last_time = time.delta_secs();
     let this_time_ms = avg_time * 1000.0;
     let mut updated = false;
 
     if this_time_ms < 8.0 {
         line_count.0 *= 2;
-        update_count_event.send(UpdateCountEvent(line_count.0));
+        update_count_event.write(UpdateCountEvent(line_count.0));
         updated = true;
         *stability = 0;
         *updated_last_frame = frame_count.0;
@@ -311,10 +315,9 @@ fn line_count_tuner(
     }
 
     if updated {
-        let mut window = windows.single_mut();
         window.title = format!("{}: {} lines", benchmark_name.0, line_count.0);
         for entity in retained_lines.iter() {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
         let mesh_hs = meshes.iter().map(|(h, _)| h).collect::<Vec<_>>();
         for mesh in &mesh_hs {

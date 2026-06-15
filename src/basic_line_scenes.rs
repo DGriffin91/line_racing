@@ -2,7 +2,11 @@ use core::f32;
 
 use bevy::{math::vec3, prelude::*};
 use bevy_mod_mesh_tools::{mesh_append, mesh_empty_default, mesh_with_transform};
-use bevy_polyline::prelude::{Polyline, PolylineBundle, PolylineMaterial};
+use bevy_polyline::{
+    material::PolylineMaterialHandle,
+    polyline::PolylineHandle,
+    prelude::{Polyline, PolylineBundle, PolylineMaterial},
+};
 use bevy_vector_shapes::prelude::*;
 
 use crate::{
@@ -13,7 +17,7 @@ use crate::{
 
 pub fn bevy_vector_shapes_retained(
     mut shapes: ShapeCommands,
-    mut update_count_event: EventReader<UpdateCountEvent>,
+    mut update_count_event: MessageReader<UpdateCountEvent>,
 ) {
     let Some(count) = update_count_event.read().last() else {
         return;
@@ -77,7 +81,7 @@ pub fn bevy_polyline_retained_continuous_polyline(
     mut commands: Commands,
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
     mut polylines: ResMut<Assets<Polyline>>,
-    mut update_count_event: EventReader<UpdateCountEvent>,
+    mut update_count_event: MessageReader<UpdateCountEvent>,
 ) {
     let Some(count) = update_count_event.read().last() else {
         return;
@@ -91,13 +95,13 @@ pub fn bevy_polyline_retained_continuous_polyline(
     }
     commands
         .spawn(PolylineBundle {
-            polyline: polylines.add(Polyline { vertices }),
-            material: polyline_materials.add(PolylineMaterial {
+            polyline: PolylineHandle(polylines.add(Polyline { vertices })),
+            material: PolylineMaterialHandle(polyline_materials.add(PolylineMaterial {
                 width: 1.0,
                 color: LinearRgba::WHITE,
                 perspective: false,
                 ..default()
-            }),
+            })),
             ..default()
         })
         .insert(RetainedLines);
@@ -107,7 +111,7 @@ pub fn bevy_polyline_retained_nan(
     mut commands: Commands,
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
     mut polylines: ResMut<Assets<Polyline>>,
-    mut update_count_event: EventReader<UpdateCountEvent>,
+    mut update_count_event: MessageReader<UpdateCountEvent>,
 ) {
     let Some(count) = update_count_event.read().last() else {
         return;
@@ -123,13 +127,13 @@ pub fn bevy_polyline_retained_nan(
     }
     commands
         .spawn(PolylineBundle {
-            polyline: polylines.add(Polyline { vertices }),
-            material: polyline_materials.add(PolylineMaterial {
+            polyline: PolylineHandle(polylines.add(Polyline { vertices })),
+            material: PolylineMaterialHandle(polyline_materials.add(PolylineMaterial {
                 width: 1.0,
                 color: LinearRgba::WHITE,
                 perspective: false,
                 ..default()
-            }),
+            })),
             ..default()
         })
         .insert(RetainedLines);
@@ -139,7 +143,7 @@ pub fn bevy_polyline_retained(
     mut commands: Commands,
     mut polyline_materials: ResMut<Assets<PolylineMaterial>>,
     mut polylines: ResMut<Assets<Polyline>>,
-    mut update_count_event: EventReader<UpdateCountEvent>,
+    mut update_count_event: MessageReader<UpdateCountEvent>,
 ) {
     let Some(count) = update_count_event.read().last() else {
         return;
@@ -155,10 +159,10 @@ pub fn bevy_polyline_retained(
         let line = line_gen.next_line();
         commands
             .spawn(PolylineBundle {
-                polyline: polylines.add(Polyline {
+                polyline: PolylineHandle(polylines.add(Polyline {
                     vertices: vec![line.0, line.1],
-                }),
-                material: material.clone(),
+                })),
+                material: PolylineMaterialHandle(material.clone()),
                 ..default()
             })
             .insert(RetainedLines);
@@ -169,7 +173,7 @@ pub fn bevy_lines_example_retained(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<LineMaterial>>,
-    mut update_count_event: EventReader<UpdateCountEvent>,
+    mut update_count_event: MessageReader<UpdateCountEvent>,
 ) {
     let Some(count) = update_count_event.read().last() else {
         return;
@@ -182,14 +186,14 @@ pub fn bevy_lines_example_retained(
     }
     // Spawn a list of lines with start and end points for each lines
     commands
-        .spawn(MaterialMeshBundle {
-            mesh: meshes.add(LineList { lines }),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
-            material: materials.add(LineMaterial {
+        .spawn((
+            Mesh3d(meshes.add(LineList { lines })),
+            Transform::from_xyz(0.0, 0.0, 0.0),
+            MeshMaterial3d(materials.add(LineMaterial {
                 color: LinearRgba::WHITE,
-            }),
-            ..default()
-        })
+                ..default()
+            })),
+        ))
         .insert(RetainedLines);
 }
 
@@ -197,7 +201,7 @@ pub fn bevy_plane_3d_retained(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut update_count_event: EventReader<UpdateCountEvent>,
+    mut update_count_event: MessageReader<UpdateCountEvent>,
 ) {
     let Some(count) = update_count_event.read().last() else {
         return;
@@ -221,12 +225,11 @@ pub fn bevy_plane_3d_retained(
         transform = transform.looking_at(line.1, vec3(0., 0.0, 3.5));
 
         commands
-            .spawn(PbrBundle {
-                mesh: mesh.clone(),
-                material: material.clone(),
+            .spawn((
+                Mesh3d(mesh.clone()),
                 transform,
-                ..default()
-            })
+                MeshMaterial3d(material.clone()),
+            ))
             .insert(RetainedLines);
     }
 }
@@ -235,7 +238,7 @@ pub fn bevy_plane_3d_retained_combined(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut update_count_event: EventReader<UpdateCountEvent>,
+    mut update_count_event: MessageReader<UpdateCountEvent>,
 ) {
     let Some(count) = update_count_event.read().last() else {
         return;
@@ -265,11 +268,12 @@ pub fn bevy_plane_3d_retained_combined(
         cull_mode: None,
         ..default()
     });
+
     commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(combined_mesh),
-            material: material.clone(),
-            ..default()
-        })
+        .spawn((
+            Mesh3d(meshes.add(combined_mesh)),
+            Transform::default(),
+            MeshMaterial3d(material.clone()),
+        ))
         .insert(RetainedLines);
 }

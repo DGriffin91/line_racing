@@ -2,13 +2,8 @@
 // From https://github.com/bevyengine/bevy/blob/0c7df881e72c1167060c170b09e02586fc74d85f/examples/3d/lines.rs#L1
 
 use bevy::{
-    prelude::*,
-    reflect::TypePath,
-    render::{
-        mesh::PrimitiveTopology,
-        render_asset::RenderAssetUsages,
-        render_resource::{AsBindGroup, ShaderRef},
-    },
+    asset::RenderAssetUsages, mesh::PrimitiveTopology, prelude::*, reflect::TypePath,
+    render::render_resource::AsBindGroup, shader::ShaderRef,
 };
 
 #[derive(Asset, TypePath, Default, AsBindGroup, Debug, Clone)]
