@@ -276,3 +276,98 @@ pub fn bevy_plane_3d_retained_combined(
         ))
         .insert(RetainedLines);
 }
+
+pub fn gizmos_retained(
+    mut commands: Commands,
+    mut gizmos: ResMut<Assets<GizmoAsset>>,
+    mut update_count_event: MessageReader<UpdateCountEvent>,
+) {
+    let Some(count) = update_count_event.read().last() else {
+        return;
+    };
+
+    let mut line_gen = ContinuousRandomLineGenerator::default();
+
+    let mut linegizmo = GizmoAsset::default();
+
+    for _ in 0..count.0 {
+        let line = line_gen.next_line();
+        linegizmo.line(line.0, line.1, Color::WHITE);
+    }
+
+    commands
+        .spawn(Gizmo {
+            handle: gizmos.add(linegizmo),
+            line_config: GizmoLineConfig {
+                width: 1.0,
+                ..default()
+            },
+            ..default()
+        })
+        .insert(RetainedLines);
+}
+
+pub fn gizmos_retained_separate(
+    mut commands: Commands,
+    mut gizmos: ResMut<Assets<GizmoAsset>>,
+    mut update_count_event: MessageReader<UpdateCountEvent>,
+) {
+    let Some(count) = update_count_event.read().last() else {
+        return;
+    };
+
+    let mut line_gen = ContinuousRandomLineGenerator::default();
+
+    for _ in 0..count.0 {
+        let line = line_gen.next_line();
+
+        let mut linegizmo = GizmoAsset::default();
+
+        linegizmo.line(line.0, line.1, Color::WHITE);
+
+        commands
+            .spawn(Gizmo {
+                handle: gizmos.add(linegizmo),
+                line_config: GizmoLineConfig {
+                    width: 1.0,
+                    ..default()
+                },
+                ..default()
+            })
+            .insert(RetainedLines);
+    }
+}
+
+pub fn gizmos_retained_continuous_polyline(
+    mut commands: Commands,
+    mut gizmos: ResMut<Assets<GizmoAsset>>,
+
+    mut update_count_event: MessageReader<UpdateCountEvent>,
+) {
+    let Some(count) = update_count_event.read().last() else {
+        return;
+    };
+
+    // Draws a single polyline (instead of individual lines).
+    let mut vertices = Vec::with_capacity(count.0 as usize);
+    let mut line_gen = ContinuousRandomLineGenerator::default();
+    for _ in 0..count.0 {
+        let line = line_gen.next_line();
+        vertices.push(line.0);
+    }
+
+    let mut linegizmo = GizmoAsset::default();
+
+    linegizmo.linestrip(vertices, Color::WHITE);
+
+    commands
+        .spawn(Gizmo {
+            handle: gizmos.add(linegizmo),
+            line_config: GizmoLineConfig {
+                width: 1.0,
+                ..default()
+            },
+            ..default()
+        })
+        .insert(RetainedLines);
+}

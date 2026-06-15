@@ -25,6 +25,10 @@ use bevy_lines_example::LineMaterial;
 use bevy_polyline::PolylinePlugin;
 use bevy_vector_shapes::prelude::*;
 
+use crate::basic_line_scenes::{
+    gizmos_retained, gizmos_retained_continuous_polyline, gizmos_retained_separate,
+};
+
 #[derive(Resource)]
 pub struct BenchmarkAllMode;
 
@@ -58,6 +62,9 @@ fn main() {
             "--gizmos_immediate",
             "--gizmos_immediate_nan",
             "--gizmos_immediate_continuous_polyline",
+            "--gizmos_retained",
+            "--gizmos_retained_separate",
+            "--gizmos_retained_continuous_polyline",
             "--bevy_vector_shapes_retained",
             "--bevy_vector_shapes_immediate",
             "--bevy_polyline_retained",
@@ -141,6 +148,16 @@ fn main() {
     }
     if args.contains(&"--gizmos_immediate_continuous_polyline".to_string()) {
         app.add_systems(Update, gizmos_immediate_continuous_polyline);
+    }
+
+    if args.contains(&"--gizmos_retained".to_string()) {
+        app.add_systems(Update, gizmos_retained);
+    }
+    if args.contains(&"--gizmos_retained_separate".to_string()) {
+        app.add_systems(Update, gizmos_retained_separate);
+    }
+    if args.contains(&"--gizmos_retained_continuous_polyline".to_string()) {
+        app.add_systems(Update, gizmos_retained_continuous_polyline);
     }
 
     app.run();
